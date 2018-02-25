@@ -1,16 +1,14 @@
-import pytest
 import sys
+import pytest
 
-from pytest import hookspec
-from _pytest.runner import (call_and_report,
-                            call_runtest_hook, check_interactive_exception, show_test_item)
-from _pytest import hookspec as _hookspec
+from _pytest.runner import (
+    call_and_report, call_runtest_hook,
+    check_interactive_exception, show_test_item
+)
 
 from functools import wraps
 from collections import deque
 
-
-pytest_plugins = ['plugin']
 
 def concurrent(func):
     @wraps(func)
@@ -23,6 +21,15 @@ def concurrent(func):
     wrapper.is_concurent = True
     wrapper.origin = func
     return wrapper
+
+
+class Hooks:
+    def pytest_round_finished(self):
+        pass
+
+
+def pytest_configure(config):
+    config.pluginmanager.add_hookspecs(Hooks)
 
 
 @pytest.hookimpl(trylast=True)
@@ -68,7 +75,7 @@ def pytest_runtestloop(session):
     return True
 
 
-@hookspec(firstresult=True)
+@pytest.hookspec(firstresult=True)
 def pytest_runtest_protocol(item, nextitem):
     if item.is_concurent:
         if not item.was_already_run:
@@ -154,7 +161,7 @@ def yield_and_report(item, when, log=True, **kwds):
     return report
 
 
-@hookspec(firstresult=True)
+@pytest.hookspec(firstresult=True)
 def pytest_report_teststatus(report):
     if report.passed:
         letter = "."
@@ -173,7 +180,7 @@ def pytest_report_teststatus(report):
     return report.outcome, letter, word
 
 
-@hookspec(firstresult=True)
+@pytest.hookspec(firstresult=True)
 def pytest_runtest_call(item):
     try:
         if item.is_concurent:
@@ -201,7 +208,7 @@ def pytest_runtest_call(item):
         raise
 
 
-@hookspec(firstresult=True)
+@pytest.hookspec(firstresult=True)
 def pytest_pyfunc_call(pyfuncitem):
     testfunction = pyfuncitem.obj
     if pyfuncitem._isyieldedfunction():
@@ -214,9 +221,6 @@ def pytest_pyfunc_call(pyfuncitem):
         res = testfunction(**testargs)
     return res
 
+
 def pytest_round_finished():
     pass
-
-@pytest.fixture(autouse=True)
-def something():
-    return 1

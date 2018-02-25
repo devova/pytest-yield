@@ -1,15 +1,15 @@
-from conftest import concurrent
+from pytest_yield import concurrent
 
 
 def test_1():
     pass
 
 @concurrent
-def test_2(something):
+def test_2(one):
     yield "Hello World"
     yield "Hello Worl2"
     yield
-    assert something == 2
+    assert one == 1
 
 class TestClass(object):
     text = "Hello %s"
@@ -17,8 +17,8 @@ class TestClass(object):
         pass
 
     @concurrent
-    def test_4(self, something):
+    def test_4(self, two):
         yield self.text % "World3"
         yield self.text % "World4"
         yield
-        assert something == 3
+        assert two == 2
