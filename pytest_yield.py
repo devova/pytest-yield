@@ -23,6 +23,10 @@ def concurrent(func):
     return wrapper
 
 
+class Report(str):
+    pass
+
+
 class Hooks:
     def pytest_round_finished(self):
         pass
@@ -155,8 +159,8 @@ def yield_and_report(item, when, log=True, **kwds):
     call.when = 'yield'
     hook = item.ihook
     report = hook.pytest_runtest_makereport(item=item, call=call)
-    report.result = getattr(call, 'result', None)
-    if not item.was_finished and not report.result:
+    report.result = getattr(call, 'result', [])
+    if not item.was_finished and all(not isinstance(res, Report) for res in report.result):
         log = False
     if log:
         hook.pytest_runtest_logreport(report=report)

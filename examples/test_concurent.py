@@ -1,4 +1,4 @@
-from pytest_yield import concurrent
+from pytest_yield import concurrent, Report
 
 
 def test_1():
@@ -6,7 +6,7 @@ def test_1():
 
 @concurrent
 def test_2(one):
-    yield "Hello World"
+    yield Report("Hello World")
     yield "Hello Worl2"
     yield
     assert one == 1
@@ -18,7 +18,7 @@ class TestClass(object):
 
     @concurrent
     def test_4(self, two):
-        yield self.text % "World3"
+        yield Report(self.text % "World3")
         yield self.text % "World4"
         yield
         assert two == 2
