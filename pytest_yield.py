@@ -28,8 +28,12 @@ class Hooks:
         pass
 
 
-def pytest_configure(config):
-    config.pluginmanager.add_hookspecs(Hooks)
+if pytest.__version__ > '3.4':
+    def pytest_configure(config):
+        config.pluginmanager.add_hookspecs(Hooks)
+else:
+    def pytest_addhooks(pluginmanager):
+        pluginmanager.add_hookspecs(Hooks)
 
 
 @pytest.hookimpl(trylast=True)

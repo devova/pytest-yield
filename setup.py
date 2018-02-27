@@ -18,5 +18,10 @@ setup(
         'License :: OSI Approved :: GPL License',
         'Programming Language :: Python',
         'Topic :: Software Development :: Testing'
-    ]
+    ],
+    entry_points={
+        'pytest11': [
+            'pytest_yield = pytest_yield',
+        ]
+    }
 )
