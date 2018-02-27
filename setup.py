@@ -11,7 +11,7 @@ setup(
     author_email='devova@gmail.com',
     url='https://github.com/devova/pytest-yield',
     py_modules=['pytest_yield'],
-    install_requires=["pytest>=3.0.7"],
+    install_requires=["pytest>=3.0"],
     classifiers=[
         'Development Status :: 4 - Testing/Stable',
         'Intended Audience :: Developers',
