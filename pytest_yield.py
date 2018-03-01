@@ -5,6 +5,7 @@ from _pytest.runner import (
     call_and_report, call_runtest_hook,
     check_interactive_exception, show_test_item
 )
+from _pytest.python import Generator
 
 from functools import wraps
 from collections import deque
@@ -18,7 +19,7 @@ def concurrent(func):
             raise Exception('%s need to be generator' % func.__name__)
         return res
 
-    wrapper.is_concurent = True
+    wrapper.is_concurrent = True
     wrapper.origin = func
     return wrapper
 
@@ -40,15 +41,27 @@ else:
         pluginmanager.add_hookspecs(Hooks)
 
 
+@pytest.hookimpl(hookwrapper=True)
+def pytest_pycollect_makeitem(collector, name, obj):
+    outcome = yield
+    res = outcome.get_result()
+    if isinstance(res, Generator) and 'concurrent' in obj.func_doc:
+        res = res.Function(name, parent=collector)
+        obj.is_concurrent = True
+        outcome.force_result(res)
+
+
 @pytest.hookimpl(trylast=True)
 def pytest_collection_modifyitems(items):
     for item in items:
-        item.is_concurent = getattr(item.obj, 'is_concurent', False)
-        if item.is_concurent:
+        item.is_concurrent = getattr(item.obj, 'is_concurrent', False)
+        if item.is_concurrent:
             item.was_already_run = False
             item.was_finished = False
             fm = item.session._fixturemanager
-            fi = fm.getfixtureinfo(item.parent, item.obj.origin, getattr(item, 'cls', None))
+            fi = fm.getfixtureinfo(
+                item.parent, getattr(item.obj, 'origin', item.obj),
+                getattr(item, 'cls', None) if hasattr(item.obj, 'origin') else None)
             item._fixtureinfo = fi
 
 
@@ -71,7 +84,7 @@ def pytest_runtestloop(session):
             item.config.hook.pytest_runtest_protocol(item=item, nextitem=nextitem)
             if session.shouldstop:
                 raise session.Interrupted(session.shouldstop)
-            if item.is_concurent and not item.was_finished:
+            if item.is_concurrent and not item.was_finished:
                 items.append(item)
             if getattr(item, 'last_in_round', False):
                 item.config.hook.pytest_round_finished()
@@ -85,7 +98,7 @@ def pytest_runtestloop(session):
 
 @pytest.hookspec(firstresult=True)
 def pytest_runtest_protocol(item, nextitem):
-    if item.is_concurent:
+    if item.is_concurrent:
         if not item.was_already_run:
             item.ihook.pytest_runtest_logstart(
                 nodeid=item.nodeid, location=item.location,
@@ -191,7 +204,7 @@ def pytest_report_teststatus(report):
 @pytest.hookspec(firstresult=True)
 def pytest_runtest_call(item):
     try:
-        if item.is_concurent:
+        if item.is_concurrent:
             if not item.was_already_run:
                 item.concurrent_test = item.ihook.pytest_pyfunc_call(pyfuncitem=item)
             try:
