@@ -12,6 +12,11 @@ def one():
 def two():
     return 2
 
+
 def pytest_round_finished():
     import time
     time.sleep(1)
+
+
+def pytest_collect_concurrent_markers():
+    return 'Verify',

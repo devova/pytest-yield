@@ -1,4 +1,6 @@
 import sys
+
+import itertools
 import pytest
 
 from _pytest.runner import (
@@ -32,6 +34,9 @@ class Hooks:
     def pytest_round_finished(self):
         pass
 
+    def pytest_collect_concurrent_markers(self):
+        pass
+
 
 if pytest.__version__ > '3.4':
     def pytest_configure(config):
@@ -41,11 +46,17 @@ else:
         pluginmanager.add_hookspecs(Hooks)
 
 
+def pytest_sessionstart(session):
+    session.concurrent_markers = list(
+        itertools.chain(*session.config.hook.pytest_collect_concurrent_markers()))
+
+
 @pytest.hookimpl(hookwrapper=True)
 def pytest_pycollect_makeitem(collector, name, obj):
     outcome = yield
     res = outcome.get_result()
-    if isinstance(res, Generator) and 'concurrent' in obj.func_doc:
+    if isinstance(res, Generator) and \
+            any(marker in obj.func_doc for marker in res.session.concurrent_markers):
         res = res.Function(name, parent=collector)
         obj.is_concurrent = True
         outcome.force_result(res)
@@ -245,3 +256,7 @@ def pytest_pyfunc_call(pyfuncitem):
 
 def pytest_round_finished():
     pass
+
+
+def pytest_collect_concurrent_markers():
+    return 'concurrent',
