@@ -54,11 +54,11 @@ def pytest_pycollect_makeitem(collector, name, obj):
         item = item.Function(name, parent=collector)
         item.was_already_run = False
         item.was_finished = False
-        fm = item.session._fixturemanager
-        fi = fm.getfixtureinfo(item.parent, item.obj,  None)
-        item._fixtureinfo = fi
+        if hasattr(item, 'cls'):
+            fm = item.session._fixturemanager
+            fi = fm.getfixtureinfo(item.parent, item.obj,  None)
+            item._fixtureinfo = fi
         outcome.force_result(item)
-
 
 
 @pytest.hookimpl(trylast=True)
