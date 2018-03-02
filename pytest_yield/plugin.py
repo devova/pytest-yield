@@ -10,31 +10,17 @@ from _pytest.runner import (
 from _pytest.python import Generator
 
 from collections import deque
-
-
-def concurrent(func):
-    func.is_concurrent = True
-    return func
-
-
-class Report(str):
-    pass
-
-
-class Hooks:
-    def pytest_round_finished(self):
-        pass
-
-    def pytest_collect_concurrent_markers(self):
-        pass
+from mark import Report
 
 
 if pytest.__version__ > '3.4':
     def pytest_configure(config):
-        config.pluginmanager.add_hookspecs(Hooks)
+        import newhooks
+        config.pluginmanager.add_hookspecs(newhooks)
 else:
     def pytest_addhooks(pluginmanager):
-        pluginmanager.add_hookspecs(Hooks)
+        import newhooks
+        pluginmanager.add_hookspecs(newhooks)
 
 
 def pytest_sessionstart(session):

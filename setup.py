@@ -21,7 +21,7 @@ setup(
     ],
     entry_points={
         'pytest11': [
-            'pytest_yield = pytest_yield',
+            'pytest_yield = pytest_yield.plugin',
         ]
     }
 )
