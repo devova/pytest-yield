@@ -9,21 +9,12 @@ from _pytest.runner import (
 )
 from _pytest.python import Generator
 
-from functools import wraps
 from collections import deque
 
 
 def concurrent(func):
-    @wraps(func)
-    def wrapper(*args, **kwargs):
-        res = func(*args, **kwargs)
-        if not hasattr(res, 'next'):
-            raise Exception('%s need to be generator' % func.__name__)
-        return res
-
-    wrapper.is_concurrent = True
-    wrapper.origin = func
-    return wrapper
+    func.is_concurrent = True
+    return func
 
 
 class Report(str):
@@ -54,26 +45,26 @@ def pytest_sessionstart(session):
 @pytest.hookimpl(hookwrapper=True)
 def pytest_pycollect_makeitem(collector, name, obj):
     outcome = yield
-    res = outcome.get_result()
-    if isinstance(res, Generator) and \
-            any(marker in obj.func_doc for marker in res.session.concurrent_markers):
-        res = res.Function(name, parent=collector)
+    item = outcome.get_result()
+    if isinstance(item, Generator) and (
+            getattr(obj, 'is_concurrent', False) or (
+                hasattr(obj, 'func_doc') and
+                any(marker in obj.func_doc for marker in item.session.concurrent_markers))):
         obj.is_concurrent = True
-        outcome.force_result(res)
+        item = item.Function(name, parent=collector)
+        item.was_already_run = False
+        item.was_finished = False
+        fm = item.session._fixturemanager
+        fi = fm.getfixtureinfo(item.parent, item.obj,  None)
+        item._fixtureinfo = fi
+        outcome.force_result(item)
+
 
 
 @pytest.hookimpl(trylast=True)
 def pytest_collection_modifyitems(items):
     for item in items:
         item.is_concurrent = getattr(item.obj, 'is_concurrent', False)
-        if item.is_concurrent:
-            item.was_already_run = False
-            item.was_finished = False
-            fm = item.session._fixturemanager
-            fi = fm.getfixtureinfo(
-                item.parent, getattr(item.obj, 'origin', item.obj),
-                getattr(item, 'cls', None) if hasattr(item.obj, 'origin') else None)
-            item._fixtureinfo = fi
 
 
 def pytest_runtestloop(session):

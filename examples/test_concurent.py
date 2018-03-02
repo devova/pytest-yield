@@ -1,8 +1,13 @@
 from pytest_yield import concurrent, Report
 
 
-def test_1():
+def test_0():
     pass
+
+
+@concurrent
+def test_1():
+    yield
 
 
 def test_2(one):
