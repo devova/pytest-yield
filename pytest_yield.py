@@ -156,6 +156,9 @@ def yieldtestprotocol(item, log=True, nextitem=None):
         item._initrequest()
     if not item.was_already_run:
         rep = call_and_report(item, "setup", False)
+        if rep.failed:
+            call_and_report(item, "setup", True)
+            item.was_finished = True
         if rep.passed and item.config.option.setupshow:
             show_test_item(item)
     if item.was_already_run or rep.passed:
