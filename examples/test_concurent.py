@@ -1,6 +1,8 @@
+import pytest
 from pytest_yield import concurrent, Report
 
 
+@pytest.mark.skip(reason="Skip this test")
 def test_0():
     pass
 
@@ -37,3 +39,9 @@ class TestClass(object):
         """
         yield
         assert one + two == 3
+
+    @concurrent
+    @pytest.mark.skip(reason="Skip this test")
+    def test_6(self, two):
+        yield
+        assert two == 2

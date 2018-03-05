@@ -119,6 +119,8 @@ def runtestprotocol(item, log=True, nextitem=None):
     if hasrequest and not item._request:
         item._initrequest()
     rep = call_and_report(item, "setup", False)
+    if not rep.passed:
+        call_and_report(item, "setup", True)
     reports = [rep]
     if rep.passed:
         if item.config.option.setupshow:
@@ -142,7 +144,7 @@ def yieldtestprotocol(item, log=True, nextitem=None):
         item._initrequest()
     if not item.was_already_run:
         rep = call_and_report(item, "setup", False)
-        if rep.failed:
+        if not rep.passed:
             call_and_report(item, "setup", True)
             item.was_finished = True
         if rep.passed and item.config.option.setupshow:
