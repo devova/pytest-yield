@@ -98,9 +98,10 @@ def pytest_runtestloop(session):
         try:
             item = items.popleft()
             upstream_item = getattr(item, 'upstream', None)
-            if upstream_item and not upstream_item.was_finished:
-                items.append(item)
-                continue
+            if upstream_item:
+                if upstream_item.is_concurrent and not upstream_item.was_finished:
+                    items.append(item)
+                    continue
             nextitem = items[0] if len(items) > 0 else None
             item.config.hook.pytest_runtest_protocol(item=item, nextitem=nextitem)
             if session.shouldstop:
@@ -117,7 +118,6 @@ def pytest_runtestloop(session):
     return True
 
 
-@pytest.hookspec(firstresult=True)
 def pytest_runtest_protocol(item, nextitem):
     if item.is_concurrent:
         if not item.was_already_run:
@@ -132,42 +132,7 @@ def pytest_runtest_protocol(item, nextitem):
                 )
         except AttributeError:  # compatibilyty with pytest==3.0
             pass
-    else:
-        item.ihook.pytest_runtest_logstart(
-            nodeid=item.nodeid, location=item.location,
-        )
-        runtestprotocol(item, nextitem=nextitem)
-        result = True
-        try:
-            item.ihook.pytest_runtest_logfinish(
-                nodeid=item.nodeid, location=item.location,
-            )
-        except AttributeError:  # compatibilyty with pytest==3.0
-            pass
-    return result
-
-
-def runtestprotocol(item, log=True, nextitem=None):
-    hasrequest = hasattr(item, "_request")
-    if hasrequest and not item._request:
-        item._initrequest()
-    rep = call_and_report(item, "setup", False)
-    if not rep.passed:
-        call_and_report(item, "setup", True)
-    reports = [rep]
-    if rep.passed:
-        if item.config.option.setupshow:
-            show_test_item(item)
-        if not item.config.option.setuponly:
-            reports.append(call_and_report(item, "call", log))
-    reports.append(call_and_report(item, "teardown", False,
-                                   nextitem=nextitem))
-    # after all teardown hooks have been called
-    # want funcargs and request info to go away
-    if hasrequest:
-        item._request = False
-        item.funcargs = None
-    return reports
+        return result
 
 
 def yieldtestprotocol(item, log=True, nextitem=None):
@@ -176,9 +141,8 @@ def yieldtestprotocol(item, log=True, nextitem=None):
     if hasrequest and not item._request:
         item._initrequest()
     if not item.was_already_run:
-        rep = call_and_report(item, "setup", False)
+        rep = call_and_report(item, "setup", log)
         if not rep.passed:
-            call_and_report(item, "setup", True)
             item.was_finished = True
         if rep.passed and item.config.option.setupshow:
             show_test_item(item)
@@ -186,7 +150,7 @@ def yieldtestprotocol(item, log=True, nextitem=None):
         if not item.config.option.setuponly:
             result = yield_and_report(item, "call", log)
     if item.was_finished:
-        call_and_report(item, "teardown", False, nextitem=nextitem)
+        call_and_report(item, "teardown", log, nextitem=nextitem)
         if hasrequest:
             item._request = False
             item.funcargs = None
@@ -208,26 +172,13 @@ def yield_and_report(item, when, log=True, **kwds):
     return report
 
 
-@pytest.hookspec(firstresult=True)
 def pytest_report_teststatus(report):
-    if report.passed:
-        letter = "."
-    elif report.skipped:
-        letter = "s"
-    elif report.failed:
-        letter = "F"
-        if report.when != "call":
-            letter = "f"
-    if report.when == 'yield' and report.passed and len(report.result) > 0:
+    if report.when == "yield" and report.passed and len(report.result) > 0:
         letter = 'y'
-        word = report.result[0] if isinstance(report.result[0], basestring) else ''
-    else:
-        word = report.outcome.upper()
-
-    return report.outcome, letter, word
+        word = report.result[0] if isinstance(report.result[0], Report) else ''
+        return report.outcome, letter, word
 
 
-@pytest.hookspec(firstresult=True)
 def pytest_runtest_call(item):
     try:
         if item.is_concurrent:
@@ -255,7 +206,6 @@ def pytest_runtest_call(item):
         raise
 
 
-@pytest.hookspec(firstresult=True)
 def pytest_pyfunc_call(pyfuncitem):
     testfunction = pyfuncitem.obj
     if pyfuncitem._isyieldedfunction():
