@@ -37,14 +37,11 @@ def pytest_pycollect_makeitem(collector, name, obj):
                 hasattr(obj, 'func_doc') and
                 any(marker in obj.func_doc for marker in item.session.concurrent_markers))):
         obj.is_concurrent = True
-        item = item.Function(name, parent=collector)
-        item.was_already_run = False
-        item.was_finished = False
-        if hasattr(item, 'cls'):
-            fm = item.session._fixturemanager
-            fi = fm.getfixtureinfo(item.parent, item.obj,  None)
-            item._fixtureinfo = fi
-        outcome.force_result(item)
+        items = list(collector._genfunctions(name, obj))
+        for item in items:
+            item.was_already_run = False
+            item.was_finished = False
+        outcome.force_result(items)
 
 
 @pytest.hookimpl(trylast=True)

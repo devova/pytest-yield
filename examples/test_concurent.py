@@ -45,3 +45,8 @@ class TestClass(object):
     def test_6(self, two):
         yield
         assert two == 2
+    
+    @concurrent
+    @pytest.mark.parametrize('v', [1, 2])
+    def test_7(self, one, v):
+        yield Report('V=%s' % v)
