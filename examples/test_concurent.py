@@ -26,7 +26,7 @@ class TestClass(object):
     def test_3(self):
         pass
 
-    @concurrent
+    @concurrent(upstream='test_7[1]')
     def test_4(self, two):
         yield Report(self.text % "World3")
         yield self.text % "World4"
@@ -40,7 +40,7 @@ class TestClass(object):
         yield
         assert one + two == 3
 
-    @concurrent
+    @concurrent(downstream='test_3')
     @pytest.mark.skip(reason="Skip this test")
     def test_6(self, two):
         yield

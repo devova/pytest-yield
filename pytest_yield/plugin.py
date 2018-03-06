@@ -48,6 +48,38 @@ def pytest_pycollect_makeitem(collector, name, obj):
 def pytest_collection_modifyitems(items):
     for item in items:
         item.is_concurrent = getattr(item.obj, 'is_concurrent', False)
+        if item.is_concurrent and hasattr(item.obj, 'upstream'):
+            upstream_name = getattr(item.obj, 'upstream')
+            for upstream_item in items:
+                if upstream_item.name == upstream_name:
+                    upstream_item.downstream = item
+                    item.upstream = upstream_item
+                    break
+            if not hasattr(item, 'upstream'):
+                # someone did a mistake in name
+                # lets figure out is there any parametrized tests
+                msg = 'Could not find upstream test with name `%s`.' % upstream_name
+                for potential_upstream_item in items:
+                    if potential_upstream_item.name.startswith(upstream_name):
+                        msg += ' Maybe you want to specify `%s`?' % potential_upstream_item.name
+                        break
+                raise Exception(msg)
+        if item.is_concurrent and hasattr(item.obj, 'downstream'):
+            downstream_name = getattr(item.obj, 'downstream')
+            for downstream_item in items:
+                if downstream_item.name == downstream_name:
+                    downstream_item.upstream = item
+                    item.downstream = downstream_item
+                    break
+            if not hasattr(item, 'downstream'):
+                # someone did a mistake in name
+                # lets figure out is there any parametrized tests
+                msg = 'Could not find downstream test with name `%s`.' % downstream_name
+                for potential_downstream_item in items:
+                    if potential_downstream_item.name.startswith(downstream_name):
+                        msg += ' Maybe you want to specify `%s`?' % potential_downstream_item.name
+                        break
+                raise Exception(msg)
 
 
 def pytest_runtestloop(session):
@@ -65,6 +97,10 @@ def pytest_runtestloop(session):
     while has_items:
         try:
             item = items.popleft()
+            upstream_item = getattr(item, 'upstream', None)
+            if upstream_item and not upstream_item.was_finished:
+                items.append(item)
+                continue
             nextitem = items[0] if len(items) > 0 else None
             item.config.hook.pytest_runtest_protocol(item=item, nextitem=nextitem)
             if session.shouldstop:
