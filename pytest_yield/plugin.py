@@ -6,8 +6,8 @@ import pytest
 from _pytest.mark import MarkInfo
 from _pytest.runner import (
     call_and_report, call_runtest_hook,
-    check_interactive_exception, show_test_item
-)
+    check_interactive_exception, show_test_item,
+    TestReport)
 from _pytest.python import Generator
 
 from collections import deque
@@ -34,12 +34,16 @@ def pytest_pycollect_makeitem(collector, name, obj):
     outcome = yield
     item = outcome.get_result()
     concurrent_mark = getattr(obj, 'concurrent', None)
-    if isinstance(item, Generator) and (isinstance(concurrent_mark, MarkInfo)):
-        items = list(collector._genfunctions(name, obj))
-        for item in items:
-            item.was_already_run = False
-            item.was_finished = False
-        outcome.force_result(items)
+    if isinstance(concurrent_mark, MarkInfo):
+        if isinstance(item, Generator):
+            items = list(collector._genfunctions(name, obj))
+            for item in items:
+                item.was_already_run = False
+                item.was_finished = False
+            outcome.force_result(items)
+        else:
+            raise Exception(
+                'Attempt to set `concurrent` mark for non generator %s' % name)
 
 
 @pytest.hookimpl(trylast=True)
@@ -56,14 +60,21 @@ def pytest_collection_modifyitems(items):
             if not hasattr(item, 'upstream'):
                 # someone did a mistake in name
                 # lets figure out is there any parametrized tests
-                msg = 'Could not find upstream test with name `%s`.' % \
+                msg = '\nCould not find upstream test with name `%s`.\n' % \
                       upstream_name
                 for potential_upstream_item in items:
                     if potential_upstream_item.name.startswith(upstream_name):
-                        msg += ' Maybe you want to specify `%s`?' % \
+                        msg += 'Maybe you want to specify `%s`?\n' % \
                                potential_upstream_item.name
                         break
-                raise Exception(msg)
+                hook = item.ihook
+                report = TestReport(
+                    item.nodeid, item.location,
+                    {}, 'failed', msg, 'configure',
+                    [], 0)
+                hook.pytest_runtest_logreport(report=report)
+                item.session.shouldstop = True
+
         if item.is_concurrent and 'downstream' in concurrent_mark.kwargs:
             downstream_name = concurrent_mark.kwargs['downstream']
             for downstream_item in items:
@@ -74,14 +85,20 @@ def pytest_collection_modifyitems(items):
             if not hasattr(item, 'downstream'):
                 # someone did a mistake in name
                 # lets figure out is there any parametrized tests
-                msg = 'Could not find downstream test with name `%s`.' % \
+                msg = '\nCould not find downstream test with name `%s`.\n' % \
                       downstream_name
                 for potential_downstream_item in items:
                     if potential_downstream_item.name.startswith(downstream_name):
-                        msg += ' Maybe you want to specify `%s`?' % \
+                        msg += 'Maybe you want to specify `%s`?\n' % \
                                potential_downstream_item.name
                         break
-                raise Exception(msg)
+                hook = item.ihook
+                report = TestReport(
+                    item.nodeid, item.location,
+                    {}, 'failed', msg, 'configure',
+                    [], 0)
+                hook.pytest_runtest_logreport(report=report)
+                item.session.shouldstop = True
 
 
 def pytest_runtestloop(session):
