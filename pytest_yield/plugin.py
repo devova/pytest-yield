@@ -3,6 +3,7 @@ import sys
 import itertools
 import pytest
 
+from _pytest.mark import MarkInfo
 from _pytest.runner import (
     call_and_report, call_runtest_hook,
     check_interactive_exception, show_test_item
@@ -32,11 +33,8 @@ def pytest_sessionstart(session):
 def pytest_pycollect_makeitem(collector, name, obj):
     outcome = yield
     item = outcome.get_result()
-    if isinstance(item, Generator) and (
-            getattr(obj, 'is_concurrent', False) or (
-                hasattr(obj, 'func_doc') and
-                any(marker in obj.func_doc for marker in item.session.concurrent_markers))):
-        obj.is_concurrent = True
+    concurrent_mark = getattr(obj, 'concurrent', None)
+    if isinstance(item, Generator) and (isinstance(concurrent_mark, MarkInfo)):
         items = list(collector._genfunctions(name, obj))
         for item in items:
             item.was_already_run = False
@@ -47,25 +45,27 @@ def pytest_pycollect_makeitem(collector, name, obj):
 @pytest.hookimpl(trylast=True)
 def pytest_collection_modifyitems(items):
     for item in items:
-        item.is_concurrent = getattr(item.obj, 'is_concurrent', False)
-        if item.is_concurrent and hasattr(item.obj, 'upstream'):
-            upstream_name = getattr(item.obj, 'upstream')
+        concurrent_mark = getattr(item.obj, 'concurrent', None)
+        item.is_concurrent = isinstance(concurrent_mark, MarkInfo)
+        if item.is_concurrent and 'upstream' in concurrent_mark.kwargs:
+            upstream_name = concurrent_mark.kwargs['upstream']
             for upstream_item in items:
                 if upstream_item.name == upstream_name:
-                    upstream_item.downstream = item
                     item.upstream = upstream_item
                     break
             if not hasattr(item, 'upstream'):
                 # someone did a mistake in name
                 # lets figure out is there any parametrized tests
-                msg = 'Could not find upstream test with name `%s`.' % upstream_name
+                msg = 'Could not find upstream test with name `%s`.' % \
+                      upstream_name
                 for potential_upstream_item in items:
                     if potential_upstream_item.name.startswith(upstream_name):
-                        msg += ' Maybe you want to specify `%s`?' % potential_upstream_item.name
+                        msg += ' Maybe you want to specify `%s`?' % \
+                               potential_upstream_item.name
                         break
                 raise Exception(msg)
-        if item.is_concurrent and hasattr(item.obj, 'downstream'):
-            downstream_name = getattr(item.obj, 'downstream')
+        if item.is_concurrent and 'downstream' in concurrent_mark.kwargs:
+            downstream_name = concurrent_mark.kwargs['downstream']
             for downstream_item in items:
                 if downstream_item.name == downstream_name:
                     downstream_item.upstream = item
@@ -74,10 +74,12 @@ def pytest_collection_modifyitems(items):
             if not hasattr(item, 'downstream'):
                 # someone did a mistake in name
                 # lets figure out is there any parametrized tests
-                msg = 'Could not find downstream test with name `%s`.' % downstream_name
+                msg = 'Could not find downstream test with name `%s`.' % \
+                      downstream_name
                 for potential_downstream_item in items:
                     if potential_downstream_item.name.startswith(downstream_name):
-                        msg += ' Maybe you want to specify `%s`?' % potential_downstream_item.name
+                        msg += ' Maybe you want to specify `%s`?' % \
+                               potential_downstream_item.name
                         break
                 raise Exception(msg)
 

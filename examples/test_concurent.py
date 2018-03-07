@@ -12,8 +12,8 @@ def test_1():
     yield
 
 
+@pytest.mark.concurrent(upstream='test_1')
 def test_2(one):
-    """concurrent"""
     yield Report("Hello World")
     yield "Hello Worl2"
     yield
@@ -26,27 +26,20 @@ class TestClass(object):
     def test_3(self):
         pass
 
-    @concurrent(upstream='test_7[1]')
+    @concurrent(upstream='test_6[1]')
     def test_4(self, two):
         yield Report(self.text % "World3")
         yield self.text % "World4"
         yield
         assert two == 2
 
-    def test_5(self, one, two):
-        """
-        Verify sum of numbers
-        """
-        yield
-        assert one + two == 3
-
     @concurrent(downstream='test_3')
     @pytest.mark.skip(reason="Skip this test")
-    def test_6(self, two):
+    def test_5(self, two):
         yield
         assert two == 2
     
     @concurrent
     @pytest.mark.parametrize('v', [1, 2])
-    def test_7(self, one, v):
+    def test_6(self, one, v):
         yield Report('V=%s' % v)
