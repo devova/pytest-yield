@@ -1,4 +1,5 @@
 import pytest
+import time
 
 pytest_plugins = ['pytest_yield']
 
@@ -14,9 +15,4 @@ def two():
 
 
 def pytest_round_finished():
-    import time
     time.sleep(1)
-
-
-def pytest_collect_concurrent_markers():
-    return 'Verify',

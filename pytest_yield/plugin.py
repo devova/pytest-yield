@@ -24,11 +24,6 @@ else:
         pluginmanager.add_hookspecs(newhooks)
 
 
-def pytest_sessionstart(session):
-    session.concurrent_markers = list(
-        itertools.chain(*session.config.hook.pytest_collect_concurrent_markers()))
-
-
 @pytest.hookimpl(hookwrapper=True)
 def pytest_pycollect_makeitem(collector, name, obj):
     outcome = yield
@@ -39,7 +34,6 @@ def pytest_pycollect_makeitem(collector, name, obj):
             items = list(collector._genfunctions(name, obj))
             for item in items:
                 item.was_already_run = False
-                item.was_finished = False
             outcome.force_result(items)
         else:
             raise Exception(
@@ -48,24 +42,24 @@ def pytest_pycollect_makeitem(collector, name, obj):
 
 @pytest.hookimpl(trylast=True)
 def pytest_collection_modifyitems(items):
+    items_dict = {item.name: item for item in items}
     for item in items:
         concurrent_mark = getattr(item.obj, 'concurrent', None)
         item.is_concurrent = isinstance(concurrent_mark, MarkInfo)
+        item.was_finished = False
         if item.is_concurrent and 'upstream' in concurrent_mark.kwargs:
             upstream_name = concurrent_mark.kwargs['upstream']
-            for upstream_item in items:
-                if upstream_item.name == upstream_name:
-                    item.upstream = upstream_item
-                    break
-            if not hasattr(item, 'upstream'):
+            if upstream_name in items_dict:
+                item.upstream = items_dict[upstream_name]
+            else:
                 # someone did a mistake in name
                 # lets figure out is there any parametrized tests
                 msg = '\nCould not find upstream test with name `%s`.\n' % \
                       upstream_name
-                for potential_upstream_item in items:
-                    if potential_upstream_item.name.startswith(upstream_name):
+                for potential_upstream_name in items_dict.keys():
+                    if potential_upstream_name.startswith(upstream_name):
                         msg += 'Maybe you want to specify `%s`?\n' % \
-                               potential_upstream_item.name
+                               potential_upstream_name
                         break
                 hook = item.ihook
                 report = TestReport(
@@ -77,20 +71,17 @@ def pytest_collection_modifyitems(items):
 
         if item.is_concurrent and 'downstream' in concurrent_mark.kwargs:
             downstream_name = concurrent_mark.kwargs['downstream']
-            for downstream_item in items:
-                if downstream_item.name == downstream_name:
-                    downstream_item.upstream = item
-                    item.downstream = downstream_item
-                    break
-            if not hasattr(item, 'downstream'):
+            if downstream_name in items_dict:
+                items_dict[downstream_name].upstream = item
+            else:
                 # someone did a mistake in name
                 # lets figure out is there any parametrized tests
                 msg = '\nCould not find downstream test with name `%s`.\n' % \
                       downstream_name
-                for potential_downstream_item in items:
-                    if potential_downstream_item.name.startswith(downstream_name):
+                for potential_downstream_name in items_dict.keys():
+                    if potential_downstream_name.startswith(downstream_name):
                         msg += 'Maybe you want to specify `%s`?\n' % \
-                               potential_downstream_item.name
+                               potential_downstream_name
                         break
                 hook = item.ihook
                 report = TestReport(
@@ -117,10 +108,9 @@ def pytest_runtestloop(session):
         try:
             item = items.popleft()
             upstream_item = getattr(item, 'upstream', None)
-            if upstream_item:
-                if upstream_item.is_concurrent and not upstream_item.was_finished:
-                    items.append(item)
-                    continue
+            if upstream_item and not upstream_item.was_finished:
+                items.append(item)
+                continue
             nextitem = items[0] if len(items) > 0 else None
             item.config.hook.pytest_runtest_protocol(item=item, nextitem=nextitem)
             if session.shouldstop:
@@ -181,8 +171,9 @@ def yield_and_report(item, when, log=True, **kwds):
     call.when = 'yield'
     hook = item.ihook
     report = hook.pytest_runtest_makereport(item=item, call=call)
-    report.result = getattr(call, 'result', [])
-    if not item.was_finished and all(not isinstance(res, Report) for res in report.result):
+    report.call_result = getattr(call, 'result', [])
+    if not item.was_finished and all(
+            not isinstance(res, Report) for res in report.call_result):
         log = False
     if log:
         hook.pytest_runtest_logreport(report=report)
@@ -192,9 +183,13 @@ def yield_and_report(item, when, log=True, **kwds):
 
 
 def pytest_report_teststatus(report):
-    if report.when == "yield" and report.passed and len(report.result) > 0:
+    if report.when == "yield" and report.passed and len(report.call_result) > 0:
         letter = 'y'
-        word = report.result[0] if isinstance(report.result[0], Report) else ''
+        word = ''
+        for res in report.call_result:
+            if isinstance(res, Report):
+                word = res
+                break
         return report.outcome, letter, word
 
 
@@ -211,6 +206,7 @@ def pytest_runtest_call(item):
                 res = None
         else:
             item.runtest()
+            item.was_finished = True
             res = None
         return res
     except Exception:
@@ -240,7 +236,3 @@ def pytest_pyfunc_call(pyfuncitem):
 
 def pytest_round_finished():
     pass
-
-
-def pytest_collect_concurrent_markers():
-    return 'concurrent',

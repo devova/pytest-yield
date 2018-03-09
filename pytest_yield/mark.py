@@ -1,7 +1,7 @@
-from _pytest.mark import MarkGenerator
+import pytest
 
 
-concurrent = MarkGenerator().concurrent
+concurrent = pytest.mark.concurrent
 
 
 class Report(str):
