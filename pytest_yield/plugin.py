@@ -233,7 +233,7 @@ def pytest_pyfunc_call(pyfuncitem):
 def pytest_fixture_post_finalizer(fixturedef, request):
     exceptions = []
     try:
-        while request._fixturedef_finalizers:
+        while getattr(request, '_fixturedef_finalizers', None):
             try:
                 func = request._fixturedef_finalizers.pop()
                 func()

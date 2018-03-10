@@ -25,6 +25,18 @@ def two():
 def do_it(request):
     obj = O()
     obj.state = request.node.name + '[1]'
+    print '%s setup' % obj.state
+    yield obj
+    obj.state = request.node.name + '[2]'
+    print '%s teardown' % obj.state
+
+
+@pytest.fixture(scope='class')
+def class_do_it(request):
+    obj = O()
+    obj.state = request.node.name + '[1]'
+    request.cls.do_it = obj
+    print '%s setup' % obj.state
     yield obj
     obj.state = request.node.name + '[2]'
     print '%s teardown' % obj.state

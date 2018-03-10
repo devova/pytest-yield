@@ -22,7 +22,8 @@ def test_2(one, do_it):
 def test_22(do_it):
     pass
 
-#
+
+@pytest.mark.usefixtures('class_do_it')
 class TestClass(object):
     text = "Hello %s"
 
@@ -47,3 +48,11 @@ class TestClass(object):
     def test_6(self, do_it, v):
         yield Report('V=%s' % v)
         yield Report(do_it.state)
+
+
+@pytest.mark.usefixtures('class_do_it')
+class TestClass2(object):
+    text = "Hello %s"
+
+    def test_7(self, do_it):
+        pass

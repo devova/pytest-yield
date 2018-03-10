@@ -16,11 +16,21 @@ class YieldSubRequest(SubRequest):
     def addfinalizer(self, finalizer):
         self._fixturedef_finalizers.append(finalizer)
 
+
 class YieldFixtureRequest(FixtureRequest):
 
     def __init__(self, pyfuncitem):
         super(YieldFixtureRequest, self).__init__(pyfuncitem)
         self.fixturedef_cached_result = {}
+
+    def cached_result_obj_for_function(self):
+        return self
+
+    def cached_result_obj_for_class(self):
+        return self.node.cls
+
+    def cached_result_obj_for_module(self):
+        return self.node.module
 
     def _compute_fixture_value(self, fixturedef):
         """
@@ -80,9 +90,13 @@ class YieldFixtureRequest(FixtureRequest):
 
         try:
             # call the fixture function
+            cache_store = getattr(
+                self, 'cached_result_obj_for_%s' % scope, lambda: None)()
             if hasattr(fixturedef, 'cached_result'):
-                if argname in self.fixturedef_cached_result:
-                    fixturedef.cached_result = self.fixturedef_cached_result[argname]
+                fixturedef_cached_result = getattr(
+                    cache_store, '_fixturedef_cached_result_%s' % argname, None)
+                if fixturedef_cached_result:
+                    fixturedef.cached_result = fixturedef_cached_result
                 else:
                     del fixturedef.cached_result
             fixturedef.execute(request=subrequest)
@@ -92,5 +106,7 @@ class YieldFixtureRequest(FixtureRequest):
                 functools.partial(
                     fixturedef.finish, request=subrequest),
                 subrequest.node)
-            self.fixturedef_cached_result[argname] = getattr(
-                fixturedef, 'cached_result', None)
+            cached_result = getattr(fixturedef, 'cached_result', None)
+            if cache_store and cached_result:
+                setattr(cache_store, '_fixturedef_cached_result_%s' % argname,
+                        getattr(fixturedef, 'cached_result', None))
