@@ -1,6 +1,5 @@
 import sys
-
-import itertools
+import py
 import pytest
 
 from _pytest.mark import MarkInfo
@@ -12,7 +11,8 @@ from _pytest.python import Generator
 
 from collections import deque
 from mark import Report
-
+from pytest_yield.fixtures import YieldFixtureRequest
+from pytest_yield.runner import YieldSetupState
 
 if pytest.__version__ > '3.4':
     def pytest_configure(config):
@@ -22,6 +22,11 @@ else:
     def pytest_addhooks(pluginmanager):
         import newhooks
         pluginmanager.add_hookspecs(newhooks)
+
+
+@pytest.hookimpl(trylast=True)
+def pytest_sessionstart(session):
+    session._setupstate = YieldSetupState()
 
 
 @pytest.hookimpl(hookwrapper=True)
@@ -44,6 +49,8 @@ def pytest_pycollect_makeitem(collector, name, obj):
 def pytest_collection_modifyitems(items):
     items_dict = {item.name: item for item in items}
     for item in items:
+        item._request = YieldFixtureRequest(item)
+
         concurrent_mark = getattr(item.obj, 'concurrent', None)
         item.is_concurrent = isinstance(concurrent_mark, MarkInfo)
         item.was_finished = False
@@ -171,9 +178,8 @@ def yield_and_report(item, when, log=True, **kwds):
     call.when = 'yield'
     hook = item.ihook
     report = hook.pytest_runtest_makereport(item=item, call=call)
-    report.call_result = getattr(call, 'result', [])
-    if not item.was_finished and all(
-            not isinstance(res, Report) for res in report.call_result):
+    report.call_result = getattr(item, 'call_result', None)
+    if not item.was_finished and not isinstance(report.call_result, Report):
         log = False
     if log:
         hook.pytest_runtest_logreport(report=report)
@@ -183,45 +189,21 @@ def yield_and_report(item, when, log=True, **kwds):
 
 
 def pytest_report_teststatus(report):
-    if report.when == "yield" and report.passed and len(report.call_result) > 0:
+    if report.when == "yield" and report.passed and \
+            isinstance(report.call_result, Report):
         letter = 'y'
-        word = ''
-        for res in report.call_result:
-            if isinstance(res, Report):
-                word = res
-                break
+        word = report.call_result
         return report.outcome, letter, word
 
 
+@pytest.hookimpl(hookwrapper=True)
 def pytest_runtest_call(item):
-    try:
-        if item.is_concurrent:
-            if not item.was_already_run:
-                item.concurrent_test = item.ihook.pytest_pyfunc_call(pyfuncitem=item)
-            try:
-                res = item.concurrent_test.next()
-                item.was_already_run = True
-            except StopIteration:
-                item.was_finished = True
-                res = None
-        else:
-            item.runtest()
-            item.was_finished = True
-            res = None
-        return res
-    except Exception:
+    yield
+    if not item.is_concurrent:
         item.was_finished = True
-        # Store trace info to allow postmortem debugging
-        type, value, tb = sys.exc_info()
-        tb = tb.tb_next  # Skip *this* frame
-        sys.last_type = type
-        sys.last_value = value
-        sys.last_traceback = tb
-        del tb  # Get rid of it in this namespace
-        raise
 
 
-def pytest_pyfunc_call(pyfuncitem):
+def init_generator(pyfuncitem):
     testfunction = pyfuncitem.obj
     if pyfuncitem._isyieldedfunction():
         res = testfunction(*pyfuncitem._args)
@@ -232,6 +214,38 @@ def pytest_pyfunc_call(pyfuncitem):
             testargs[arg] = funcargs[arg]
         res = testfunction(**testargs)
     return res
+
+
+def pytest_pyfunc_call(pyfuncitem):
+    if pyfuncitem.is_concurrent:
+        if not pyfuncitem.was_already_run:
+            pyfuncitem.concurrent_test = init_generator(pyfuncitem)
+            pyfuncitem.was_already_run = True
+        try:
+            res = pyfuncitem.concurrent_test.next()
+        except StopIteration:
+            pyfuncitem.was_finished = True
+            res = None
+        pyfuncitem.call_result = res
+        return res
+
+
+def pytest_fixture_post_finalizer(fixturedef, request):
+    exceptions = []
+    try:
+        while request._fixturedef_finalizers:
+            try:
+                func = request._fixturedef_finalizers.pop()
+                func()
+            except:  # noqa
+                exceptions.append(sys.exc_info())
+        if exceptions:
+            e = exceptions[0]
+            del exceptions  # ensure we don't keep all frames alive because of the traceback
+            py.builtin._reraise(*e)
+
+    finally:
+        pass
 
 
 def pytest_round_finished():
