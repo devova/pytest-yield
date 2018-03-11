@@ -34,11 +34,17 @@ def pytest_pycollect_makeitem(collector, name, obj):
     outcome = yield
     item = outcome.get_result()
     concurrent_mark = getattr(obj, 'concurrent', None)
+    if not concurrent_mark:
+        concurrent_mark = getattr(obj, 'async', None)
     if isinstance(concurrent_mark, MarkInfo):
         if isinstance(item, Generator):
             items = list(collector._genfunctions(name, obj))
             for item in items:
                 item.was_already_run = False
+                if hasattr(item.obj, 'origin'):
+                    fm = item.session._fixturemanager
+                    fi = fm.getfixtureinfo(item.parent, item.obj.origin, item.cls)
+                    item._fixtureinfo = fi
             outcome.force_result(items)
         else:
             raise Exception(
@@ -52,6 +58,8 @@ def pytest_collection_modifyitems(items):
         item._request = YieldFixtureRequest(item)
 
         concurrent_mark = getattr(item.obj, 'concurrent', None)
+        if not concurrent_mark:
+            concurrent_mark = getattr(item.obj, 'async', None)
         item.is_concurrent = isinstance(concurrent_mark, MarkInfo)
         item.was_finished = False
         if item.is_concurrent and 'upstream' in concurrent_mark.kwargs:
