@@ -19,10 +19,6 @@ class YieldSubRequest(SubRequest):
 
 class YieldFixtureRequest(FixtureRequest):
 
-    def __init__(self, pyfuncitem):
-        super(YieldFixtureRequest, self).__init__(pyfuncitem)
-        self.fixturedef_cached_result = {}
-
     def cached_result_obj_for_function(self):
         return self
 
@@ -31,6 +27,9 @@ class YieldFixtureRequest(FixtureRequest):
 
     def cached_result_obj_for_module(self):
         return self.node.module
+
+    def cached_result_obj_for_session(self):
+        return self.node.session
 
     def _compute_fixture_value(self, fixturedef):
         """

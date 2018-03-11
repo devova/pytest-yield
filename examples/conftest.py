@@ -42,6 +42,5 @@ def class_do_it(request):
     print '%s teardown' % obj.state
 
 
-
 def pytest_round_finished():
     time.sleep(1)
