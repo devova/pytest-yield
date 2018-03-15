@@ -192,7 +192,7 @@ def yield_and_report(item, when, log=True, **kwds):
     hook = item.ihook
     report = hook.pytest_runtest_makereport(item=item, call=call)
     report.call_result = getattr(item, 'call_result', None)
-    if not item.was_finished and not isinstance(report.call_result, Report):
+    if not item.was_finished and report.passed and not isinstance(report.call_result, Report):
         log = False
     if log:
         hook.pytest_runtest_logreport(report=report)
@@ -239,6 +239,9 @@ def pytest_pyfunc_call(pyfuncitem):
         except StopIteration:
             pyfuncitem.was_finished = True
             res = None
+        except Exception:
+            pyfuncitem.was_finished = True
+            raise
         pyfuncitem.call_result = res
         return res
 
