@@ -12,17 +12,25 @@ from _pytest.python import Generator
 
 from collections import deque
 from mark import Report
-from pytest_yield.fixtures import YieldFixtureRequest
+from pytest_yield.fixtures import YieldFixtureRequest, YieldFixtureDef
 from pytest_yield.runner import YieldSetupState
 
 if pytest.__version__ > '3.4':
+    @pytest.hookimpl(trylast=True)
     def pytest_configure(config):
         import newhooks
         config.pluginmanager.add_hookspecs(newhooks)
+        config.pluginmanager.get_plugin('fixtures').FixtureDef.finish = YieldFixtureDef.finish
+        config.pluginmanager.get_plugin('fixtures').FixtureDef.addfinalizer = YieldFixtureDef.addfinalizer
+        config.pluginmanager.get_plugin('fixtures').FixtureDef.execute = YieldFixtureDef.execute
 else:
+    @pytest.hookimpl(trylast=True)
     def pytest_addhooks(pluginmanager):
         import newhooks
         pluginmanager.add_hookspecs(newhooks)
+        config.pluginmanager.get_plugin('fixtures').FixtureDef.finish = YieldFixtureDef.finish
+        config.pluginmanager.get_plugin('fixtures').FixtureDef.addfinalizer = YieldFixtureDef.addfinalizer
+        config.pluginmanager.get_plugin('fixtures').FixtureDef.execute = YieldFixtureDef.execute
 
 
 @pytest.hookimpl(trylast=True)
