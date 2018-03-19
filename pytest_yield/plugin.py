@@ -28,9 +28,9 @@ else:
     def pytest_addhooks(pluginmanager):
         import newhooks
         pluginmanager.add_hookspecs(newhooks)
-        config.pluginmanager.get_plugin('fixtures').FixtureDef.finish = YieldFixtureDef.finish
-        config.pluginmanager.get_plugin('fixtures').FixtureDef.addfinalizer = YieldFixtureDef.addfinalizer
-        config.pluginmanager.get_plugin('fixtures').FixtureDef.execute = YieldFixtureDef.execute
+        pluginmanager.get_plugin('fixtures').FixtureDef.finish = YieldFixtureDef.finish
+        pluginmanager.get_plugin('fixtures').FixtureDef.addfinalizer = YieldFixtureDef.addfinalizer
+        pluginmanager.get_plugin('fixtures').FixtureDef.execute = YieldFixtureDef.execute
 
 
 @pytest.hookimpl(trylast=True)
