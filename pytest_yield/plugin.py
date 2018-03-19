@@ -130,6 +130,7 @@ def pytest_runtestloop(session):
             upstream_item = getattr(item, 'upstream', None)
             if upstream_item and not upstream_item.was_finished:
                 items.append(item)
+                maybe_last_in_round(item, items)
                 continue
             nextitem = items[0] if len(items) > 0 else None
             item.config.hook.pytest_runtest_protocol(item=item, nextitem=nextitem)
@@ -137,14 +138,18 @@ def pytest_runtestloop(session):
                 raise session.Interrupted(session.shouldstop)
             if item.is_concurrent and not item.was_finished:
                 items.append(item)
-            if getattr(item, 'last_in_round', False):
-                item.config.hook.pytest_round_finished()
-                delattr(item, 'last_in_round')
-                if len(items) > 0:
-                    items[-1].last_in_round = True
+            maybe_last_in_round(item, items)
         except IndexError:
             has_items = False
     return True
+
+
+def maybe_last_in_round(item, items):
+    if getattr(item, 'last_in_round', False):
+        item.config.hook.pytest_round_finished()
+        delattr(item, 'last_in_round')
+        if len(items) > 0:
+            items[-1].last_in_round = True
 
 
 def pytest_runtest_protocol(item, nextitem):
