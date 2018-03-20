@@ -1,23 +1,28 @@
-*Here is output of running tests*
-```bash
-(venv) vtrotsys@VTROTSYS-M-P58Y ~/P/c/pytest-yield> pytest -vv -s examples/
-========================================================================================= test session starts ==========================================================================================
-platform darwin -- Python 2.7.14, pytest-3.4.1, py-1.5.2, pluggy-0.6.0 -- /Users/vtrotsys/Projects/cloudlock/connectors_tests/venv/bin/python
-cachedir: .pytest_cache
-rootdir: /Users/vtrotsys/Projects/cloudlock/pytest-yield, inifile:
-plugins: yield-0.1
-collected 6 items
+### What?
+**pytest_yield** is a plugin that allows run tests as coroutines.
+This means that a few tests can being executing at same time.
 
-examples/test_concurent.py::test_0 PASSED
-examples/test_concurent.py::test_1
-examples/test_concurent.py::test_2 Hello World
-examples/test_concurent.py::TestClass::test_3 PASSED
-examples/test_concurent.py::TestClass::test_4 Hello World3
-examples/test_concurent.py::TestClass::test_5
-examples/test_concurent.py::test_1 PASSED
-examples/test_concurent.py::TestClass::test_5 PASSED
-examples/test_concurent.py::test_2 PASSED
-examples/test_concurent.py::TestClass::test_4 PASSED
+### Why?
+This is first question that engineers asking.
+General theory said us that each test have to be run separetelly and independently,
+meaning without any influence on other tests.
+This plugin breaks this rules at all. 
 
-======================================================================================= 8 passed in 4.03 seconds =======================================================================================
-```
+So why do we need it?
+
+Imagine we have integration tests where each test execution takes very long time.
+For examle test should wait for some reactions depend on initial actions.
+This waiting could take up to e.g. 1 hour. And even after it we need perform next action from scenario and wait more.
+Syncronous execution of all tests, one by one, will take huge amout of time.
+But what if all test cases are independent, so actions of _test1_ does not influence results of _test2_.
+Than make sense some how skip waiting prosess of _test1_ and switch execution context to _test2_.
+This actually what **pytest_yield** doing.
+
+### How?
+Each concurrent test is suppose to be a generator.
+Switching of execution context is performed after each `yield`. Test add itself to the end of a deueue if generator is not exausted yet.
+After new one is pulled from left side of dequeue. 
+Assume test have `N` yields, tahn it will be `N` times rescheduled.
+
+### Do not use with
+Tests that are cross dependent. Most particular example is unittests with mocks, if _test1_ mock some method, this will be implicitly mocked in _test2_ also.
