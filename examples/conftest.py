@@ -1,14 +1,20 @@
 import pytest
 import time
 
+from collections import defaultdict
+
 pytest_plugins = ['pytest_yield']
 
 
-class O(object):
-    state = None
+class CallCounter(object):
+    def __init__(self):
+        self.count = defaultdict(lambda: 0)
 
-    def __repr__(self):
-        return self.state
+    def incr(self, lvl):
+        self.count[lvl] += 1
+
+    def decr(self, lvl):
+        self.count[lvl] -= 1
 
 
 @pytest.fixture(autouse=True)
@@ -21,25 +27,37 @@ def two():
     return 2
 
 
-@pytest.fixture(autouse=True)
-def do_it(request):
-    obj = O()
-    obj.state = request.node.name + '[1]'
-    print '%s setup' % obj.state
-    yield obj
-    obj.state = request.node.name + '[2]'
-    print '%s teardown' % obj.state
+@pytest.fixture(scope='session')
+def call_counter(request):
+    counter = CallCounter()
+    counter.incr('session')
+    yield counter
+    counter.decr('session')
+    assert counter.count['function'] == 0
+    assert counter.count['class'] == 0
+    assert counter.count['module'] == 0
+
+@pytest.fixture(scope='module')
+def check_teardown_module(call_counter):
+    call_counter.incr('module')
+    yield
+    call_counter.decr('module')
+    assert call_counter.count['function'] == 0
+    assert call_counter.count['class'] == 0
 
 
 @pytest.fixture(scope='class')
-def class_do_it(request):
-    obj = O()
-    obj.state = request.node.name + '[1]'
-    request.cls.do_it = obj
-    print '%s setup' % obj.state
-    yield obj
-    obj.state = request.node.name + '[2]'
-    print '%s teardown' % obj.state
+def check_teardown_class(call_counter):
+    call_counter.incr('class')
+    yield
+    call_counter.decr('class')
+    assert call_counter.count['function'] == 0
+
+@pytest.fixture(autouse=True)
+def check_teardown_function(call_counter):
+    call_counter.incr('function')
+    yield
+    call_counter.decr('function')
 
 
 def pytest_round_finished():
