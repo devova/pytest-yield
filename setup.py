@@ -10,18 +10,14 @@ setup(
     author='Volodymyr Trotsyshyn',
     author_email='devova@gmail.com',
     url='https://github.com/devova/pytest-yield',
+    download_url='https://github.com/devova/pytest-yield/archive/0.1.tar.gz',
     py_modules=['pytest_yield'],
     install_requires=["pytest>=3.0"],
-    classifiers=[
-        'Development Status :: 4 - Testing/Stable',
-        'Intended Audience :: Developers',
-        'License :: OSI Approved :: GPL License',
-        'Programming Language :: Python',
-        'Topic :: Software Development :: Testing'
-    ],
+    keywords=['testing', 'pytest'],
+    classifiers=[],
     entry_points={
         'pytest11': [
-            'pytest_yield = pytest_yield.plugin',
+            'yield = pytest_yield.plugin',
         ]
     }
 )
