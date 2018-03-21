@@ -1,10 +1,11 @@
 #!/usr/bin/env python
 
-from setuptools import setup
+from setuptools import setup, find_packages
 
 setup(
     name='pytest-yield',
     version='0.1.1',
+    packages=find_packages(),
     description='PyTest plugin to run tests concurrently, each `yield` switch context to other test',
     long_description=open("README.md").read(),
     author='Volodymyr Trotsyshyn',
