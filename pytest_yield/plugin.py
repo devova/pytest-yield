@@ -60,6 +60,9 @@ def pytest_collection_modifyitems(items):
     items_dict = {item.name: item for item in items}
     for item in items:
         item._request = YieldFixtureRequest(item)
+        item_chain = item.listchain()
+        session = item_chain[0]
+        session._setupstate.collection_stack.add_nested(item_chain)
 
         concurrent_mark = getattr(item.obj, 'concurrent', None)
         if not concurrent_mark:

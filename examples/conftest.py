@@ -42,8 +42,6 @@ def check_teardown_module(call_counter):
     call_counter.incr('module')
     yield
     call_counter.decr('module')
-    assert call_counter.count['function'] == 0
-    assert call_counter.count['class'] == 0
 
 
 @pytest.fixture(scope='class')
@@ -51,7 +49,6 @@ def check_teardown_class(call_counter):
     call_counter.incr('class')
     yield
     call_counter.decr('class')
-    assert call_counter.count['function'] == 0
 
 @pytest.fixture(autouse=True)
 def check_teardown_function(call_counter):

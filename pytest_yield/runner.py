@@ -45,6 +45,16 @@ class TreeStack(dict):
                 if res is not None:
                     return res
 
+    def get(self, key):
+        contains = dict.__contains__(self, key)
+        if contains:
+            return dict.get(self, key)
+        else:
+            for val in self.values():
+                res = val.get(key)
+                if res is not None:
+                    return res
+
     def popitem(self):
         for val in self.values():
             if val:
@@ -57,6 +67,7 @@ class YieldSetupState(SetupState):
     def __init__(self):
         super(YieldSetupState, self).__init__()
         self.stack = TreeStack()
+        self.collection_stack = TreeStack()
 
     def _teardown_towards(self, needed_collectors):
         return
@@ -68,6 +79,10 @@ class YieldSetupState(SetupState):
     def teardown_exact(self, item, nextitem):
         self._teardown_with_finalization(item)
         self.stack.pop(item)
+        self.collection_stack.pop(item)
+        items_on_same_lvl = self.collection_stack.get(item.parent)
+        if items_on_same_lvl is not None and len(items_on_same_lvl) == 0:
+            self.teardown_exact(item.parent, None)
 
     def prepare(self, colitem):
         """ setup objects along the collector chain to the test-method
