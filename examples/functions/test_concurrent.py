@@ -4,6 +4,11 @@ from pytest_yield import Report
 pytestmark = pytest.mark.usefixtures('check_teardown_module')
 
 
+def sub_generator(num):
+    for x in xrange(num):
+        yield x + 1
+
+
 @pytest.mark.skip(reason="Skip this test")
 @pytest.mark.concurrent
 def test_skip_concurrent():
@@ -30,6 +35,11 @@ def test_concurrent_with_report(one, two):
     assert one + two == 3
     yield "Hello Worl2"
 
+@pytest.mark.concurrent
+def test_concurrent_with_sub_generator(one):
+    number = yield sub_generator(2)
+    assert one == 1
+    assert number == 2
 
 @pytest.mark.xfail
 @pytest.mark.concurrent

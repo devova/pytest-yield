@@ -240,18 +240,33 @@ def init_generator(pyfuncitem):
 def pytest_pyfunc_call(pyfuncitem):
     if pyfuncitem.is_concurrent:
         if not pyfuncitem.was_already_run:
-            pyfuncitem.concurrent_test = init_generator(pyfuncitem)
+            pyfuncitem._concurrent_stack = [init_generator(pyfuncitem)]
             pyfuncitem.was_already_run = True
+            try:
+                pyfuncitem._concurrent_res = pyfuncitem._concurrent_stack[-1].next()
+            except Exception:
+                pyfuncitem.was_finished = True
+                del pyfuncitem._concurrent_res
+                raise
+            return
         try:
-            res = pyfuncitem.concurrent_test.next()
+            if hasattr(pyfuncitem._concurrent_res, 'next'):
+                pyfuncitem._concurrent_stack.append(pyfuncitem._concurrent_res)
+                pyfuncitem._concurrent_res = pyfuncitem._concurrent_stack[-1].next()
+            else:
+                pyfuncitem._concurrent_res = pyfuncitem._concurrent_stack[-1].send(
+                    pyfuncitem._concurrent_res)
         except StopIteration:
-            pyfuncitem.was_finished = True
-            res = None
+            pyfuncitem._concurrent_stack.pop()
+            if len(pyfuncitem._concurrent_stack) == 0:
+                pyfuncitem.was_finished = True
+                del pyfuncitem._concurrent_res
         except Exception:
             pyfuncitem.was_finished = True
+            del pyfuncitem._concurrent_res
             raise
-        pyfuncitem.call_result = res
-        return res
+        pyfuncitem.call_result = getattr(pyfuncitem, '_concurrent_res', None)
+        return pyfuncitem.call_result
 
 
 def pytest_fixture_post_finalizer(fixturedef, request):
