@@ -24,5 +24,6 @@ Switching of execution context is performed after each `yield`. Test add itself 
 After new one is pulled from left side of dequeue. 
 Assume test have `N` yields, tahn it will be `N` times rescheduled.
 
+![](https://raw.githubusercontent.com/devova/pytest-yield/b0c7aa058df5f50cb9a05272fce01fc62a78bbee/how-it-works-pytest-yield.svg?sanitize=true)
 ### Do not use with
 Tests that are cross dependent. Most particular example is unittests with mocks, if _test1_ mock some method, this will be implicitly mocked in _test2_ also.
