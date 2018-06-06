@@ -246,7 +246,8 @@ def pytest_pyfunc_call(pyfuncitem):
                 pyfuncitem._concurrent_res = pyfuncitem._concurrent_stack[-1].next()
             except Exception:
                 pyfuncitem.was_finished = True
-                del pyfuncitem._concurrent_res
+                if hasattr(pyfuncitem, '_concurrent_res'):
+                    del pyfuncitem._concurrent_res
                 raise
             return
         try:
