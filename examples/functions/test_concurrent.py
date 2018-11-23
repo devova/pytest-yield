@@ -35,11 +35,13 @@ def test_concurrent_with_report(one, two):
     assert one + two == 3
     yield "Hello Worl2"
 
+
 @pytest.mark.concurrent
 def test_concurrent_with_sub_generator(one):
     number = yield sub_generator(2)
     assert one == 1
     assert number == 2
+
 
 @pytest.mark.xfail
 @pytest.mark.concurrent

@@ -3,7 +3,6 @@ import py
 import pytest
 from _pytest.compat import get_real_func
 
-from _pytest.mark import MarkInfo
 from _pytest.runner import (
     call_and_report, call_runtest_hook,
     check_interactive_exception, show_test_item,
@@ -15,8 +14,9 @@ from mark import Report
 from pytest_yield.fixtures import YieldFixtureRequest, YieldFixtureDef
 from pytest_yield.runner import YieldSetupState
 
+
 if pytest.__version__ > '3.4':
-    @pytest.hookimpl(trylast=True)
+    @pytest.mark.trylast
     def pytest_configure(config):
         import newhooks
         config.pluginmanager.add_hookspecs(newhooks)
@@ -24,7 +24,7 @@ if pytest.__version__ > '3.4':
         config.pluginmanager.get_plugin('fixtures').FixtureDef.addfinalizer = YieldFixtureDef.addfinalizer
         config.pluginmanager.get_plugin('fixtures').FixtureDef.execute = YieldFixtureDef.execute
 else:
-    @pytest.hookimpl(trylast=True)
+    @pytest.mark.trylast
     def pytest_addhooks(pluginmanager):
         import newhooks
         pluginmanager.add_hookspecs(newhooks)
@@ -33,7 +33,7 @@ else:
         pluginmanager.get_plugin('fixtures').FixtureDef.execute = YieldFixtureDef.execute
 
 
-@pytest.hookimpl(trylast=True)
+@pytest.mark.trylast
 def pytest_sessionstart(session):
     session._setupstate = YieldSetupState()
 
@@ -42,10 +42,12 @@ def pytest_sessionstart(session):
 def pytest_pycollect_makeitem(collector, name, obj):
     outcome = yield
     item = outcome.get_result()
+
     concurrent_mark = getattr(obj, 'concurrent', None)
     if not concurrent_mark:
         concurrent_mark = getattr(obj, 'async', None)
-    if isinstance(concurrent_mark, MarkInfo):
+
+    if concurrent_mark:
         if isinstance(item, Generator):
             obj = get_real_func(obj)
             items = list(collector._genfunctions(name, obj))
@@ -55,7 +57,7 @@ def pytest_pycollect_makeitem(collector, name, obj):
                 'Attempt to set `concurrent` mark for non generator %s' % name)
 
 
-@pytest.hookimpl(trylast=True)
+@pytest.mark.trylast
 def pytest_collection_modifyitems(items):
     items_dict = {item.name: item for item in items}
     for item in items:
@@ -64,10 +66,17 @@ def pytest_collection_modifyitems(items):
         session = item_chain[0]
         session._setupstate.collection_stack.add_nested(item_chain)
 
-        concurrent_mark = getattr(item.obj, 'concurrent', None)
+        if pytest.__version__ >= '3.6':
+            concurrent_mark = item.get_closest_marker('concurrent')
+        else:
+            concurrent_mark = getattr(item.obj, 'concurrent', None)
         if not concurrent_mark:
-            concurrent_mark = getattr(item.obj, 'async', None)
-        item.is_concurrent = isinstance(concurrent_mark, MarkInfo)
+            if pytest.__version__ >= '3.6':
+                concurrent_mark = item.get_closest_marker('async')
+            else:
+                concurrent_mark = getattr(item.obj, 'async', None)
+
+        item.is_concurrent = concurrent_mark or False
         item.was_already_run = False
         item.was_finished = False
         if item.is_concurrent and 'upstream' in concurrent_mark.kwargs:
