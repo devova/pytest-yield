@@ -30,10 +30,10 @@ class TreeStack(dict):
         return added
 
     def flat(self):
-        res = self.keys()
+        res = list(self.keys())
         for val in self.values():
             res += val.flat()
-        return res
+        return list(res)
 
     def pop(self, key):
         contains = dict.__contains__(self, key)

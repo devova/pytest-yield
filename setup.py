@@ -10,6 +10,7 @@ setup(
     long_description=open("README.md").read(),
     author='Volodymyr Trotsyshyn',
     author_email='devova@gmail.com',
+    use_2to3=True,
     url='https://github.com/devova/pytest-yield',
     download_url='https://github.com/devova/pytest-yield/archive/0.1.7.tar.gz',
     py_modules=['pytest_yield'],

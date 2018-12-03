@@ -5,7 +5,7 @@ pytestmark = pytest.mark.usefixtures('check_teardown_module')
 
 
 def sub_generator(num):
-    for x in xrange(num):
+    for x in range(num):
         yield x + 1
 
 

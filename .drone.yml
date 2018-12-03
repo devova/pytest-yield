@@ -7,9 +7,9 @@ pipeline:
       - python setup.py install
       - flake8 pytest
       - pytest examples/
-  build-3.7:
+  build-3.7.1:
     image: python:3.7.1-alpine
     commands:
       - pip install --upgrade pip setuptools wheel
-      - python setup.py install
+      - pip install -e .
       - pytest examples/

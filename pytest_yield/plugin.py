@@ -1,4 +1,5 @@
 import sys
+import six
 import py
 import pytest
 from _pytest.compat import get_real_func
@@ -10,7 +11,7 @@ from _pytest.runner import (
 from _pytest.python import Generator
 
 from collections import deque
-from mark import Report
+from .mark import Report
 from pytest_yield.fixtures import YieldFixtureRequest, YieldFixtureDef
 from pytest_yield.runner import YieldSetupState
 
@@ -252,7 +253,7 @@ def pytest_pyfunc_call(pyfuncitem):
             pyfuncitem._concurrent_stack = [init_generator(pyfuncitem)]
             pyfuncitem.was_already_run = True
             try:
-                pyfuncitem._concurrent_res = pyfuncitem._concurrent_stack[-1].next()
+                pyfuncitem._concurrent_res = six.next(pyfuncitem._concurrent_stack[-1])
             except Exception:
                 pyfuncitem.was_finished = True
                 if hasattr(pyfuncitem, '_concurrent_res'):
@@ -260,9 +261,10 @@ def pytest_pyfunc_call(pyfuncitem):
                 raise
             return
         try:
-            if hasattr(pyfuncitem._concurrent_res, 'next'):
+            if hasattr(pyfuncitem._concurrent_res, 'next') or hasattr(
+                    pyfuncitem._concurrent_res, '__next__'):
                 pyfuncitem._concurrent_stack.append(pyfuncitem._concurrent_res)
-                pyfuncitem._concurrent_res = pyfuncitem._concurrent_stack[-1].next()
+                pyfuncitem._concurrent_res = six.next(pyfuncitem._concurrent_stack[-1])
             else:
                 pyfuncitem._concurrent_res = pyfuncitem._concurrent_stack[-1].send(
                     pyfuncitem._concurrent_res)
