@@ -11,9 +11,5 @@ pipeline:
     image: python:3.7.1-alpine
     commands:
       - pip install --upgrade pip setuptools wheel
-      - export APP_PATH=$DRONE_DIR/..
-      - export PYTHONPATH=$APP_PATH
-      - echo $PYTHONPATH
-      - ls -l
       - pip install -e .
       - pytest examples/

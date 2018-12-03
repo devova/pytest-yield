@@ -19,7 +19,7 @@ from pytest_yield.runner import YieldSetupState
 if pytest.__version__ > '3.4':
     @pytest.mark.trylast
     def pytest_configure(config):
-        import newhooks
+        from . import newhooks
         config.pluginmanager.add_hookspecs(newhooks)
         config.pluginmanager.get_plugin('fixtures').FixtureDef.finish = YieldFixtureDef.finish
         config.pluginmanager.get_plugin('fixtures').FixtureDef.addfinalizer = YieldFixtureDef.addfinalizer
@@ -27,7 +27,7 @@ if pytest.__version__ > '3.4':
 else:
     @pytest.mark.trylast
     def pytest_addhooks(pluginmanager):
-        import newhooks
+        from . import newhooks
         pluginmanager.add_hookspecs(newhooks)
         pluginmanager.get_plugin('fixtures').FixtureDef.finish = YieldFixtureDef.finish
         pluginmanager.get_plugin('fixtures').FixtureDef.addfinalizer = YieldFixtureDef.addfinalizer
