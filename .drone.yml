@@ -1,0 +1,9 @@
+pipeline:
+  build:
+    image: python:2.7.14-alpine
+    commands:
+      - pip install --upgrade pip setuptools wheel
+      - pip install flake8
+      - python setup.py install
+      - flake8 pytest
+      - pytest examples/

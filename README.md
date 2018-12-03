@@ -1,3 +1,5 @@
+[![Build Status](https://cloud.drone.io/api/badges/devova/pytest-yield/status.svg)](https://cloud.drone.io/devova/pytest-yield)
+
 ### What?
 **pytest_yield** is a plugin that allows run tests as coroutines.
 This means that a few tests can being executing at same time.
