@@ -1,3 +1,4 @@
+[![Build Status](https://img.shields.io/pypi/v/pytest-yield.svg)](https://pypi.org/project/pytest-yield/)
 [![Build Status](https://cloud.drone.io/api/badges/devova/pytest-yield/status.svg)](https://cloud.drone.io/devova/pytest-yield)
 
 ### What?
