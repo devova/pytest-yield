@@ -4,8 +4,8 @@ pipeline:
     commands:
       - pip install --upgrade pip setuptools wheel
       - pip install flake8
-      - python setup.py install
-      - flake8 pytest
+      - pip install -e .
+      - flake8
       - pytest examples/
   build-3.7.1:
     image: python:3.7.1-alpine
@@ -13,3 +13,9 @@ pipeline:
       - pip install --upgrade pip setuptools wheel
       - pip install -e .
       - pytest examples/
+  pypi_publish:
+    image: gjtempleton/drone-pypi
+    secrets: [username, password]
+    when:
+      event: tag
+      status: success
