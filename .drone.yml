@@ -12,9 +12,10 @@ pipeline:
       - pip install -e .
       - ls -lah
       - pwd
+      - git pull origin master
       - git status
       - git tag
-      - git remote
+      - git remote get-url --all origin
       - python setup.py --version
       - flake8
       - pytest examples/
