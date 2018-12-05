@@ -21,9 +21,10 @@ if pytest.__version__ > '3.4':
     def pytest_configure(config):
         from . import newhooks
         config.pluginmanager.add_hookspecs(newhooks)
-        config.pluginmanager.get_plugin('fixtures').FixtureDef.finish = YieldFixtureDef.finish
-        config.pluginmanager.get_plugin('fixtures').FixtureDef.addfinalizer = YieldFixtureDef.addfinalizer
-        config.pluginmanager.get_plugin('fixtures').FixtureDef.execute = YieldFixtureDef.execute
+        fixture_def = config.pluginmanager.get_plugin('fixtures').FixtureDef
+        fixture_def.finish = YieldFixtureDef.finish
+        fixture_def.addfinalizer = YieldFixtureDef.addfinalizer
+        fixture_def.execute = YieldFixtureDef.execute
 else:
     @pytest.mark.trylast
     def pytest_addhooks(pluginmanager):
