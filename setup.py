@@ -5,7 +5,7 @@ from setuptools import setup
 setup(
     name='pytest-yield',
     packages=['pytest_yield'],
-    description='PyTest plugin to run tests concurrently, each `yield` switch context to other test',
+    description='PyTest plugin to run tests concurrently, each `yield` switch context to other one',
     long_description=open("README.md").read(),
     author='Volodymyr Trotsyshyn',
     author_email='devova@gmail.com',

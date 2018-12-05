@@ -1,6 +1,6 @@
 import pytest
 
-from pytest_yield import Report
+from pytest_yield.mark import Report
 
 pytestmark = pytest.mark.usefixtures('check_teardown_module')
 

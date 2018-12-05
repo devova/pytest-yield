@@ -38,7 +38,6 @@ class YieldFixtureDef(FixtureDef):
                 del self.cached_result
             del _finalizers[:]
 
-
     @staticmethod
     def addfinalizer(self, finalizer, colitem=None):
         if colitem:
@@ -91,9 +90,9 @@ class CachedResultStore(object):
 
     def _compute_fixture_value(self, fixturedef):
         """
-        Creates a SubRequest based on "self" and calls the execute method of the given fixturedef object. This will
-        force the FixtureDef object to throw away any previous results and compute a new fixture value, which
-        will be stored into the FixtureDef object itself.
+        Creates a SubRequest based on "self" and calls the execute method of the given
+        fixturedef object. This will force the FixtureDef object to throw away any previous results
+        and compute a new fixture value, which will be stored into the FixtureDef object itself.
 
         :param FixtureDef fixturedef:
         """
