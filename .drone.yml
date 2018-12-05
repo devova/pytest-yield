@@ -1,7 +1,10 @@
 pipeline:
   build-2.7.14:
-    image: python:2.7.14-alpine
+    image: python:2.7.14
+    secrets: [github_auth_token]
     commands:
+      - apt-get install git
+      - git config --global "url.https://$${GITHUB_AUTH_TOKEN}@github.com.insteadOf" ssh://git@github.com
       - pip install --upgrade pip setuptools wheel
       - pip install flake8
       - pip install -e .
@@ -18,4 +21,4 @@ pipeline:
     secrets: [username, password]
     when:
       event: tag
-      status: success
+      branch: master
