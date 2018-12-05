@@ -24,3 +24,5 @@ pipeline:
     secrets: [username, password]
     username: $USERNAME
     password: $PASSWORD
+    when:
+      event: tag
