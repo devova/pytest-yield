@@ -19,11 +19,8 @@ pipeline:
       - pip install --upgrade pip setuptools wheel
       - pip install -e .
       - pytest examples/
-  pypi_publish:
+  pypi-publish:
     image: gjtempleton/drone-pypi
     secrets: [username, password]
     username: $USERNAME
     password: $PASSWORD
-    when:
-      event: [tag]
-      branch: [master]
