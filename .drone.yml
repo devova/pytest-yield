@@ -14,6 +14,7 @@ pipeline:
       - pwd
       - git status
       - git tag
+      - git remote
       - python setup.py --version
       - flake8
       - pytest examples/
