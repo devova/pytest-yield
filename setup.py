@@ -18,7 +18,7 @@ setup(
     setup_requires=[
         'setuptools_scm',
     ],
-    use_scm_version=True,
+    use_scm_version={'root': '.', 'relative_to': __file__},
     entry_points={
         'pytest11': [
             'yield = pytest_yield.plugin',
