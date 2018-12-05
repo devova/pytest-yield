@@ -8,6 +8,7 @@ pipeline:
       - pip install --upgrade pip setuptools wheel
       - pip install flake8
       - pip install -e .
+      - python setup.py --version
       - flake8
       - pytest examples/
   build-3.7.1:
@@ -26,6 +27,7 @@ pipeline:
       - apt-get install git
       - git config --global "url.https://$${GITHUB_AUTH_TOKEN}@github.com.insteadOf" ssh://git@github.com
       - pip install --upgrade pip setuptools wheel twine
+      - python setup.py --version
       - python setup.py sdist
       - twine upload dist/pytest-yield-${DRONE_TAG}.zip -u $USERNAME -p $PASSWORD
     when:
