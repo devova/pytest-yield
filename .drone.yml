@@ -22,6 +22,8 @@ pipeline:
   pypi_publish:
     image: gjtempleton/drone-pypi
     secrets: [username, password]
+    username: $USERNAME
+    password: $PASSWORD
     when:
       event: [tag]
       branch: [master]
