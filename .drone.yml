@@ -12,6 +12,8 @@ pipeline:
       - pip install -e .
       - ls -lah
       - pwd
+      - git status
+      - git tag
       - python setup.py --version
       - flake8
       - pytest examples/
