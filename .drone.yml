@@ -27,6 +27,8 @@ pipeline:
       - pip install --upgrade pip setuptools wheel twine
       - python setup.py --version
       - python setup.py sdist
+      - echo $USERNAME
+      - echo $$USERNAME
       - twine upload dist/pytest-yield-${DRONE_TAG}.zip -u $$USERNAME -p $$PASSWORD
     when:
       event: tag
