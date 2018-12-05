@@ -23,5 +23,5 @@ pipeline:
     image: gjtempleton/drone-pypi
     secrets: [username, password]
     when:
-      event: tag
-      branch: master
+      event: [tag]
+      branch: [master]
