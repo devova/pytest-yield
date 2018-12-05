@@ -14,8 +14,8 @@ pipeline:
       - pwd
       - git pull origin master
       - git status
-      - git tag
-      - git remote get-url --all origin
+      - git tag -l
+      - git remote -v
       - python setup.py --version
       - flake8
       - pytest examples/
