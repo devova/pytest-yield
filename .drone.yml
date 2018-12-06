@@ -6,22 +6,23 @@ pipeline:
   build-2.7.14:
     image: python:2.7.14
     commands:
-      - pip install setuptools flake8
+      - pip install flake8
       - pip install -e .
       - flake8
       - pytest examples/
   build-3.7.1:
     image: python:3.7.1
     commands:
-      - pip install setuptools
+      - pip install flake8
       - pip install -e .
+      - flake8
       - pytest examples/
   pypi-publish:
     image: python:2.7.14
     secrets: [username, password]
     commands:
       - git fetch --tags
-      - pip install setuptools twine
+      - pip install twine
       - python setup.py sdist
       - twine upload dist/pytest-yield-${DRONE_TAG}.zip -u $username -p $password
     when:
