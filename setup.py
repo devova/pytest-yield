@@ -6,7 +6,7 @@ setup(
     name='pytest-yield',
     packages=['pytest_yield'],
     description='PyTest plugin to run tests concurrently, each `yield` switch context to other one',
-    long_description=open("README.md").read(),
+    long_description=open("README.rst").read(),
     author='Volodymyr Trotsyshyn',
     author_email='devova@gmail.com',
     use_2to3=True,
@@ -14,7 +14,10 @@ setup(
     py_modules=['pytest_yield'],
     install_requires=["pytest>=3.0"],
     keywords=['testing', 'pytest'],
-    classifiers=[],
+    classifiers=[
+        'Programming Language :: Python :: 2.7',
+        'Programming Language :: Python :: 3.7',
+    ],
     setup_requires=[
         'setuptools_scm',
     ],
