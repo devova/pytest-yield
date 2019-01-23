@@ -12,7 +12,7 @@ setup(
     use_2to3=True,
     url='https://github.com/devova/pytest-yield',
     py_modules=['pytest_yield'],
-    install_requires=["pytest>=3.0"],
+    install_requires=["pytest>=3.0,<4.1"],
     keywords=['testing', 'pytest'],
     classifiers=[
         'Programming Language :: Python :: 2.7',
